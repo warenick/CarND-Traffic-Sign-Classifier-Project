@@ -6,42 +6,45 @@ import torch
 class LeNet(nn.Module):
     def __init__(self):
         super(LeNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 3)
-        self.conv2 = nn.Conv2d(6, 16, 3)
-        self.fc1   = nn.Linear(16*6*6, 120)
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1   = nn.Linear(16*5*5, 120)
         self.fc2   = nn.Linear(120, 84)
         self.fc3   = nn.Linear(84, 43)
-        # self.conv1 = nn.Conv2d(3, 6, 5)
-        # self.conv2 = nn.Conv2d(6, 16, 5)
-        # self.fc1   = nn.Linear(16*5*5, 120)
-        # self.fc2   = nn.Linear(120, 84)
-        # self.fc3   = nn.Linear(84, 43)
 
     def forward(self, x):
-         # Max pooling over a (2, 2) window
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        # If the size is a square you can only specify a single number
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        out = F.relu(self.conv1(x))
+        out = F.max_pool2d(out, 2)
+        out = F.relu(self.conv2(out))
+        out = F.max_pool2d(out, 2)
+        out = out.view(out.size(0), -1)
+        out = F.relu(self.fc1(out))
+        out = F.relu(self.fc2(out))
+        out = self.fc3(out)
+        return out
 
-        # out = F.relu(self.conv1(x))
-        # out = F.max_pool2d(out, 2)
-        # out = F.relu(self.conv2(out))
-        # out = F.max_pool2d(out, 2)
-        # out = out.view(out.size(0), -1)
-        # out = F.relu(self.fc1(out))
-        # out = F.relu(self.fc2(out))
-        # out = self.fc3(out)
-        # return out
+class Net2(nn.Module):
+    def __init__(self):
+        super(Net2, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.drop_out = nn.Dropout()
+        self.fc1 = nn.Linear(2 * 32 * 64, 1000)
+        self.fc2 = nn.Linear(1000, 84*5)
+        self.fc3 = nn.Linear(84*5, 43)
 
-    def num_flat_features(self, x):
-        # все измерения, исключая измерение пакета
-        size = x.size()[1:]  
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = out.reshape(out.size(0), -1)
+        out = self.drop_out(out)
+        out = self.fc1(out)
+        out = self.fc2(out)
+        out = self.fc3(out)
+        return out
